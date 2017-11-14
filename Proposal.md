@@ -1,6 +1,6 @@
 ---
 title: Project Proposal
-author: Caleb Ki & Sanjana Gupta
+author: Caleb Ki & Sanjana Loser
 date: November 15, 2017
 geometry: margin = 1in
 fontsize: 12pt
