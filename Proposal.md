@@ -3,7 +3,7 @@ title: Project Proposal
 author: Caleb Ki & Sanjana Gupta
 date: November 15, 2017
 geometry: margin = 1in
-fontsize: 12pt
+fontsize: 11pt
 header-includes:
    - \usepackage{amsthm}
    - \usepackage{amsmath, mathtools}
@@ -33,7 +33,7 @@ There are two main hurdles to developing efficient first-order solutions for con
 		& & \lambda \in \mathcal{K}^*
 		\end{aligned}
 	\end{equation}
-	$g$ is simply the dual function given by $g(\lambda) = \inf_{x}f(x) - \sum_{i=1}^{m}\mathcal{A}(x)_i + b_i,$ and $\mathcal{K}^* = \{\lambda \in \mathbb{R}^m: \langle \lambda, x \rangle \geq 0 \: \forall x \in \mathcal{K} \}$ is the dual cone. 
+	$g$ is simply the dual function given by $g(\lambda) = \inf_{x}f(x) - \sum_{i=1}^{m}\lambda_i(\mathcal{A}(x)_i + b_i),$ and $\mathcal{K}^* = \{\lambda \in \mathbb{R}^m: \langle \lambda, x \rangle \geq 0 \: \forall x \in \mathcal{K} \}$ is the dual cone. 
 
 The dual problem is not directly solved at this step. This is because the dual function is generally not differentiable for the class of problems we are considering. Further, directly using subgradient methods is not efficient since these methods converge very slowly. In order to convert this to a problem that can be efficiently optimized, we apply a smoothing technique which modifies the primal objective function and instead solves the following problem:  
     \begin{equation} \label{smooth}
