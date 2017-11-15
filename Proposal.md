@@ -62,15 +62,12 @@ where $g_{\mu}$ is a smooth approximation of $g$. In many cases, the dual can be
      \end{equation}
 This is known as the \textit{composite form}. Here, $z\in\mathbb{R}^m$ is the optimization variable, $g_{sm}$ is a smooth convex function and $h$ is a non-smooth (possibly extended-value) convex function. Finally, we can efficiently solve both the smooth dual and the composite problems using optimal first order methods.
 
-First order methods are optimization methods that have at most linear local error and are descendants of the projected gradient algorithm. For the smooth dual problem (\ref{smooth_dual}), the optimization begins with a point $\lambda_0\in\mathcal{K}^*$ and has the following updating rule:
-      \begin{equation} \label{update_dual}
-           \lambda_{k+1} \leftarrow \underset{\lambda\in\mathcal{K}^*}{\text{arg min}} \| \lambda_k + t_k\nabla g_{\mu} (\lambda_k) - \lambda \|_2
-     \end{equation}
-Here $\{t_k\}$ is a given sequence of step-sizes. For the composite problem (\ref{composite}), the corresponding iteration is given as follows:
-     \begin{equation} \label{update_comp}
+For both the problems (\ref{smooth_dual},\ref{composite}), given a sequence of step sizes $\{t_k\}$, the optimization begins with a point $\lambda_0\in\mathcal{K}^*$ and has the following updating rule respectively:
+      \begin{equation} 
+           \lambda_{k+1} \leftarrow \underset{\lambda\in\mathcal{K}^*}{\text{arg min}} \| \lambda_k + t_k\nabla g_{\mu} (\lambda_k) - \lambda \|_2 \\
            z_{k+1} \leftarrow \underset{y}{\text{arg min }} g_{sm}(z_k) + \langle \nabla g_{sm}(z_k), z-z_k\rangle + \frac{1}{2t_k} \| z-z_k \|^2 + h(z)
      \end{equation}
-In the above equation, while $\|\cdot\|$ is a general norm, it reduces to equation \ref{update_dual} under the Euclidean norm with $h$ as the indicator function. The approximate primal solution can then be recovered from the optimal value of $\lambda$ as follows:
+The approximate primal solution can then be recovered from the optimal value of $\lambda$ as follows:
       \begin{equation} \label{recover}
           x(\lambda) \triangleq \underset{x}{\text{arg min }} f(x) + \mu d(x) - \langle \mathcal{A}(x)+b, \lambda \rangle
      \end{equation}
