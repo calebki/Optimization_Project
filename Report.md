@@ -85,4 +85,63 @@ Equation \ref{recover} shows that the fundamental computational primitive in thi
 
 To summarize the background, TFOCS, when given the correct conic formulation of an optimization problem will apply various first-order solvers to the smoothed dual problem. The goal of this project is to port a portion of the TFOCS software package from Matlab into Python. TFOCS implements six different first-order methods. The default is the single-projection method developed by @ausl:tebo:2006. For our project we will be implementing the default algorithm as well as the dual-projection method developed by @lan:etal:2011. In particular, we would like our solvers to accept a pythonic version of the calling sequence found in the user manual written by @beck:etal:2014 which is: \texttt{[x, out] = tfoc(smoothF, affineF, nonsmoothF, x0)}. Given  a smooth function $\texttt{smoothF}$, an affine form specification $\texttt{affineF}$, a nonsmooth function $\texttt{nonsmoothF}$, and an initial point $\texttt{x0}$, the solver would return the optimal vector $\texttt{x}$ and the primal solution $\texttt{out}$. 
 
+# Implementation
+AT
+\textbf{Step size $L_k$: lines 3,9-16}
+Generally it's very difficult to calculate $L$. Further, the step size $\frac{1}{L}$ is often too conservative. While the performance can be improved by reducing $L$, reducing $L$ too much can cause the algorithm to diverge. All these problems are simultaneously resolved by using \textit{backtracking}: backtracking is a technique used to find the solution to an optimization problem by building partial candidates to the solution called \textit{backtracks}. Each backtrack is dropped as soon as the algorithm realizes that it can not be extended to a valid solution. Applying this technique to Lipschitz constant in our problem, we estimate the global constant L by $L_k$ which preserves convergence if the following inequality holds:
+	\begin{equation}\label{Linequality1}
+	g(z_{k+1})\leq g(y_k) + \langle \nabla g(y_k), z_{k+1}-y_k \rangle + \frac{1}{2} L_k \|z_{k+1}-y_k\|^2.
+	\end{equation} 
+It is observed that if $g(z_{k+1})$ is very close to $g(y_k)$, equation (\ref{Linequality1}) suffers from severe cancellation errors. Generally, cancellation errors occur if $g(y_k)-g(z_{k+1})<\gamma g(z_{k+1})$ where the threshold for $\gamma$ is around $10^{-8}$ to $10^{-6}$. To be safe, we consider $\gamma=10^{-4}$. In this case, we use the following inequality to ensure convergence:
+	\begin{equation}\label{Linequality2}
+	|\langle y_k-z_{k+1},\nabla g(z_{k+1})- \nabla g(y_k)\rangle | \leq \frac{1}{2}L_k \|z_{k+1}-y_k\|^2.
+	\end{equation}
+
+Note that the above inequalities (\ref{Linequality1}), (\ref{Linequality2}) automatically holds for $L_k\geq L$. Let's consider what's going on in iteration $k$. If $L_k \geq L$ then the relevant inequality automatically holds (and the relevant inequality at each of the subsequent iterations will hold too). In this case we do not update $L_k$ further. If however $L_k<L$ we simply increase $L_k$ by a factor of $\frac{1}{\beta}$ to obtain $\frac{L_k}{\beta}$ (for $\beta\in(0,1)$) which eventually results in $L_k\geq L$. Thus, backtracking preserves global convergence.To combine both the above cases in one step, we introduce $\hat{L}$ which is the smallest value of $L_k$ that satisfies the relevant inequality (\ref{Linequality1}) or (\ref{Linequality2}) at the $k^{th}$ iteration. $L_k$ is then updated as max$\{\frac{L_k}{\beta},\hat{L}\}$. Here, $\hat{L}$ is obtained by changing the inequalities (\ref{Linequality1}), (\ref{Linequality2}) to equalities and solving for $L_k$.\\
+Note that in every iteration we try to reduce the value of the Lipschitz estimate $L_k$ (\textit{line 3}). This is done to improve the performance of the algorithm and is achieved by updating $L_k=\alpha L_{k-1}$ for some fixed $\alpha\in (0,1]$.  A recommended value for $\alpha$ is 0.9 which is what we have used here as well. Reducing $L_k$ at each iteration can ofcourse lead to backtracks which we try to minimize by picking an appropriate value of $\alpha$.
+
+\textbf{Updating $\theta_k$: line 5}
+To update $\theta$ along with $L_k$ in each iteration, we use the following inequality which also ensures that convergence is preserved:
+	\begin{equation}
+	\frac{L_{k+1} {\theta_{k+1}}^2 }{1-\theta_{k+1}} \geq L_{k} {\theta_{k}}^2
+	\end{equation}
+
+\textbf{line 7}
+We see that the update for $\bar{z}_{k+1}$ is simply the proximity function for $h$ with step size $\frac{1}{L}$ evaluated at $y_k - \frac{\nabla g(y_k)}{L}$. The proximity operator \textit{prox} of a convex function $h$ at $x$ is defined as the unique solution to the following:
+	\begin{equation}
+	\text{prox}_{t,h}(x) = \text{arg }\underset{z}{\text{min }} h(y) + \frac{1}{2t} \|x-z\|^2
+	\end{equation}
+Here $t$ is the step size. The update in \textit{line 7} is then equivalent to a proximity function as follows:
+	\begin{equation}
+		\begin{aligned}
+		&\underset{z}{\text{arg min }} \langle \nabla g(y_k),z \rangle + \frac{L}{2} \|z-y_k\|^2 + h(z)\\
+		&= \underset{z}{\text{arg min }} h(z) + \frac{L}{2}\Big( \frac{2}{L} \langle \nabla g(y_k),z \rangle + \|z\|^2 -2\langle y_k,z\rangle + \|y_k\|^2\Big)\\
+		&= \underset{z}{\text{arg min }} h(z) + \frac{L}{2}\Big( 2 \langle \frac{\nabla g(y_k)}{L}-y_k, z \rangle + \|z\|^2 + \|y_k\|^2\Big)\\
+		&= \underset{z}{\text{arg min }} h(z) + \frac{L}{2}\Big( 2 \langle \frac{\nabla g(y_k)}{L}-y_k,z \rangle + \|z\|^2\Big) + \frac{L}{2}\|y_k\|^2\\
+		&= \underset{z}{\text{arg min }} h(z) + \frac{L}{2}\Big( \|\frac{g(y_k)}{L}-y_k+z\|^2 - \| \frac{\nabla g(y_k)}{L}-y_k\|^2\Big)  + \frac{L}{2}\|y_k\|^2\\
+		&= \underset{z}{\text{arg min }} h(z) + \frac{L}{2} \|y_k - \frac{\nabla g(y_k)}{L}-z\|^2 \\
+		&= \text{prox}_{\frac{1}{L},h} \Big(y_k - \frac{\nabla g(y_k)}{L}\Big)\label{prox1}
+		\end{aligned}
+	\end{equation}
+This clearly holds since $\frac{L}{2}\|y_k\|^2 - \frac{L}{2}\| \frac{\nabla g(y_k)}{L}-y_k\|^2 $ is independent of $z$ and hence does not affect the optimization. Therefore, we drop this term to get the proximity function as in the last line.  
+
+\textbf{Stopping criterion: line 17}
+
+
+LLM
+For LLM,  the update in \textit{line 8} 	can be computed using the proximity function as follows:
+	\begin{equation*}
+		\begin{aligned}
+		&\underset{z}{\text{arg min }} \langle \nabla g(y_k),z \rangle + \frac{L\theta_k}{2} \|z-\bar{z}_k\|^2 + h(z)\\
+		&= \underset{z}{\text{arg min }} h(z) + \frac{L\theta_k}{2}\Big( \frac{2}{L\theta_k} \langle \nabla g(y_k),z \rangle + \|z\|^2 -2\langle \bar{z}_k,z\rangle + \|\bar{z}_k\|^2\Big)\\
+		&= \underset{z}{\text{arg min }} h(z) + \frac{L\theta_k}{2}\Big( 2 \langle \frac{\nabla g(y_k)}{L\theta_k}-\bar{z}_k, z \rangle + \|z\|^2 + \|\bar{z}_k\|^2\Big)\\
+		&= \underset{z}{\text{arg min }} h(z) + \frac{L\theta_k}{2}\Big( 2 \langle \frac{\nabla g(y_k)}{L\theta_k}-y_k,z \rangle + \|z\|^2\Big) + \frac{L\theta_k}{2}\|y_k\|^2\\
+		&= \underset{z}{\text{arg min }} h(z) + \frac{L\theta_k}{2}\Big( \|\frac{\nabla g(y_k)}{L\theta_k}-\bar{z}_k+z\|^2 - \| \frac{\nabla g(y_k)}{L\theta_k}- y_k\|^2\Big)  + \frac{L\theta_k}{2}\|\bar{z}_k\|^2\\
+		&= \underset{z}{\text{arg min }} h(z) + \frac{L\theta_k}{2} \|\bar{z}_k - \frac{\nabla g(y_k)}{L\theta_k}-z\|^2 \\
+		&= \text{prox}_{\frac{1}{L\theta_k},h} \Big(\bar{z}_k - \frac{\nabla g(y_k)}{L\theta_k}\Big)
+		\end{aligned}
+	\end{equation*}
+As observed earlier, this clearly holds follows since the term $\frac{L\theta_k}{2}\|\bar{z}_k\|^2 - \frac{L\theta_k}{2} \| \frac{\nabla g(y_k)}{L\theta_k}- y_k\|^2$ being independent of $z$ does not affect the minimization and can be dropped to obtained the proximity function as in the last line.
+
+
 # References
