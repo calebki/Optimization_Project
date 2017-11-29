@@ -7,33 +7,35 @@ Created on Mon Nov 20 20:52:15 2017
 import numpy as np
 import numpy.linalg as LA
 
-'''
-Implementing Algorithm 9 in TFOCS.pdf
-The smooth function g is represented as g(x) = gbar(Astar(z)) + <b,z>
-'''
-def AT_Solver(g, A, b, zOld, LHat, alpha = 0.9, beta, k):
-    zBarOld = z
-    AStar = A.conj().T#set as conjugate transpose
-    zAOld = 
-    zBarAOld = 
-    gConj = 
-    thetaOld = float("inf")
-    theta0 = 1
-    LOld = LHat
-
-    for i in k:
-        LNew = alpha * LOld
-        while True
-            thetaNew = 2/(1+(1+4*))
-            yNew = (1 - thetaNew) * zOld + thetaNew * zBarOld
-            yANew = (1 - thetaNew) * zAOld + thetanew * zBarAOld
-            gConjNew = 
-            gNew = 
-            zBarNew =
-            zNew = 
-            LHat = 
+def tfocs_AT(smoothF, affineF, projectorF, x0, tol = 1e-8):
+    alpha = 0.9
+    beta = 0.5
+    thetaNew = 1
+    z0 = 
+    z1 = 
+    LNew = LA.norm(smoothF(z0)[1] - smoothF(z1)[1], 2) / LA.norm(z0 - z1, 2)
+    xNew = x0
+    xBarNew = x0
+    
+    
+    while True
+        LOld = alpha * LNew
+        xOld = xNew
+        xBarOld = xBarNew
+        thetaOld = thetaNew
+        while True:
+            y = (1 - thetaOld) * xOld + thetaOld * xBarOld
+            xBarNew = 
+            xNew = (1-theta)
+            LHat =  
+            LNew = 
             if LNew >= LHat:
                 break
-            LNew = max(LNew/beta, LHat)
+            LNew = max(L/beta, LHat)
+            thetaNew = 2/(1+np.sqrt((1+4*LNew/(thetaOld^2 * LOld)))
+        if stop(tol):
+            break
         
+def stop(tol):
+    return LA.norm(xnew - xold, 2)/max(1, LA.norm(xnew)) <= tol 
     
