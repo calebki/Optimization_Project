@@ -13,7 +13,7 @@ def tfocs_AT(smoothF, affineF, projectorF, x0, tol = 1e-8):
     thetaNew = 1
     z0 = 
     z1 = 
-    LNew = LA.norm(smoothF(z0)[1] - smoothF(z1)[1], 2) / LA.norm(z0 - z1, 2)
+    LNew = 1
     xNew = x0
     xBarNew = x0
     
