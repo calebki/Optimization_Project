@@ -7,35 +7,59 @@ Created on Mon Nov 20 20:52:15 2017
 import numpy as np
 import numpy.linalg as LA
 
-def tfocs_AT(smoothF, affineF, projectorF, x0, tol = 1e-8):
+def tfocs(smoothF, gradF, nonsmoothF, projectorF, x0, 
+          tol = 1e-8, gamma = 1e-4, method = 'AT'):
+    """Returns optimal point and solution to optimization problem
+    
+    Keyword arguments:
+        smoothF -- a smooth function
+        gradF -- the gradient of the smooth function
+        nonsmoothF -- a nonsmooth function
+        projectorF -- prox function of the nonsmooth function
+        x0 -- initial starting point
+        tol -- tolerance threshold for convergence of optimization problem 
+                (default 1e-8)
+        gamma -- threshold for deciding how to backtrack using L (default 1e-5)
+        method -- 'AT' for Auslender and Teboulle's method and 'LLM' for Lan, 
+                  Lu, and Monteiro's method
+    """
     alpha = 0.9
     beta = 0.5
     thetaNew = 1
-    z0 = 
-    z1 = 
     LNew = 1
     xNew = x0
     xBarNew = x0
     
     
-    while True
-        LOld = alpha * LNew
+    while True:
+        LOld = LNew
+        LNew = LOld * alpha
         xOld = xNew
         xBarOld = xBarNew
         thetaOld = thetaNew
         while True:
+            thetaNew = 2/(1 + np.sqrt(1 + 4*LNew / (thetaOld^2 * LOld)))
             y = (1 - thetaOld) * xOld + thetaOld * xBarOld
-            xBarNew = 
-            xNew = (1-theta)
-            LHat =  
-            LNew = 
+            xBarNew = projectorF(y - gradF(y)/LNew, 1/LNew)
+            if method == 'AT':
+                xNew = (1-thetaNew)*xOld + thetaNew*xBarNew
+            elif method == 'LLM':
+                xNew = projectorF(xBarNew - gradF(y)/(LNew * thetaNew), 
+                                  1/(LNew * thetaNew))
+            if smoothF(y) - smoothF(xNew) >= gamma * smoothF(xNew):
+                LHat = \
+                2*(smoothF(xNew) - smoothF(y) - (gradF(y).dot(xNew - y))) \
+                /LA.norm(xNew - y)^2  
+            else:
+                LHat = 2 * np.absolute(
+                        np.dot(y - xNew, gradF(xNew) - gradF(y))) \
+                        /LA.norm(xNew - y)^2
             if LNew >= LHat:
                 break
-            LNew = max(L/beta, LHat)
-            thetaNew = 2/(1+np.sqrt((1+4*LNew/(thetaOld^2 * LOld)))
-        if stop(tol):
+            LNew = max(LNew/beta, LHat)
+        if LA.norm(xNew - xOld, 2)/max(1, LA.norm(xNew)) <= tol:
             break
-        
-def stop(tol):
-    return LA.norm(xnew - xold, 2)/max(1, LA.norm(xnew)) <= tol 
+    
+    return np.array([xNew, smoothF(xNew) + nonsmoothF(xNew)])
+    
     
