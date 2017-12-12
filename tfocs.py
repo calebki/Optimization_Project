@@ -38,7 +38,7 @@ def tfocs(smoothF, gradF, nonsmoothF, projectorF, x0,
         xBarOld = xBarNew
         thetaOld = thetaNew
         while True:
-            thetaNew = 2/(1 + np.sqrt(1 + 4*LNew / (thetaOld^2 * LOld)))
+            thetaNew = 2/(1 + np.sqrt(1 + 4*LNew / (np.power(thetaOld,2) * LOld)))
             y = (1 - thetaOld) * xOld + thetaOld * xBarOld
             xBarNew = projectorF(y - gradF(y)/LNew, 1/LNew)
             if method == 'AT':
@@ -49,11 +49,11 @@ def tfocs(smoothF, gradF, nonsmoothF, projectorF, x0,
             if smoothF(y) - smoothF(xNew) >= gamma * smoothF(xNew):
                 LHat = \
                 2*(smoothF(xNew) - smoothF(y) - (gradF(y).dot(xNew - y))) \
-                /LA.norm(xNew - y)^2  
+                /np.power(LA.norm(xNew - y),2) 
             else:
                 LHat = 2 * np.absolute(
                         np.dot(y - xNew, gradF(xNew) - gradF(y))) \
-                        /LA.norm(xNew - y)^2
+                        /np.power(LA.norm(xNew - y),2)
             if LNew >= LHat:
                 break
             LNew = max(LNew/beta, LHat)
