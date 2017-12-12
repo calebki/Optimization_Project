@@ -39,7 +39,7 @@ def tfocs(smoothF, gradF, nonsmoothF, projectorF, x0,
         thetaOld = thetaNew
         while True:
             thetaNew = 2/(1 + np.sqrt(1 + 4*LNew / (np.power(thetaOld,2) * LOld)))
-            y = (1 - thetaOld) * xOld + thetaOld * xBarOld
+            y = (1 - thetaNew) * xOld + thetaNew * xBarOld
             xBarNew = projectorF(y - gradF(y)/LNew, 1/LNew)
             if method == 'AT':
                 xNew = (1-thetaNew)*xOld + thetaNew*xBarNew

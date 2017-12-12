@@ -13,11 +13,11 @@ import numpy.linalg as LA
 data = np.genfromtxt('diabetes.csv', delimiter=',')
 X = np.array(data[:, :-1], dtype='float')
 Y = np.array(data[:, -1], dtype='int')
-np.vstack(np.ones(np.shape(X)[0],X))
-l = 0
+X=np.hstack((np.ones((np.shape(X)[0],1)),X))
+l = 1
 
 def SoftThreshold(x,y):
-    return np.where(x<=-y,x+y,np.where(abs(x)<=y,0,x-y))
+    return np.where(x<-y,x+y,np.where(abs(x)<=y,0,x-y))
 def prox(x,t):
     return SoftThreshold(x,l*t)
 def smoothF(b):
@@ -25,9 +25,9 @@ def smoothF(b):
 def gradF(b):
     return np.dot(np.transpose(X),np.dot(X,b))-np.dot(np.transpose(X),Y)
 def nonsmoothF(b):
-    return LA.norm(b,1)
+    return l*LA.norm(b,1)
 def projectorF(b,t):
     return prox(b,t)
 
-tfocs(smoothF, gradF, nonsmoothF, projectorF,, 
+a,b = tfocs(smoothF, gradF, nonsmoothF, projectorF,np.array([0,0,-230,530,335,-780,495,110,165,760,60]), 
           tol = 1e-8, gamma = 1e-4, method = 'AT')
