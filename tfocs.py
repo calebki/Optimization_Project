@@ -40,12 +40,12 @@ def tfocs(smoothF, gradF, nonsmoothF, projectorF, x0,
         while True:
             thetaNew = 2/(1 + np.sqrt(1 + 4*LNew / (np.power(thetaOld,2) * LOld)))
             y = (1 - thetaNew) * xOld + thetaNew * xBarOld
-            xBarNew = projectorF(y - gradF(y)/LNew, 1/LNew)
+            xBarNew = projectorF(xBarNew - gradF(y)/(LNew * thetaNew), 
+                                  1/(LNew * thetaNew))
             if method == 'AT':
                 xNew = (1-thetaNew)*xOld + thetaNew*xBarNew
             elif method == 'LLM':
-                xNew = projectorF(xBarNew - gradF(y)/(LNew * thetaNew), 
-                                  1/(LNew * thetaNew))
+                xNew = projectorF(y - gradF(y)/LNew, 1/LNew)
             if smoothF(y) - smoothF(xNew) >= gamma * smoothF(xNew):
                 LHat = \
                 2*(smoothF(xNew) - smoothF(y) - (gradF(y).dot(xNew - y))) \
