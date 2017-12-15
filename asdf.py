@@ -23,7 +23,7 @@ def tfocs(smoothF, gradF, nonsmoothF, projectorF, x0,
         method -- 'AT' for Auslender and Teboulle's method and 'LLM' for Lan, 
                   Lu, and Monteiro's method
     """
-    alpha = 0.9
+    alpha = 0.7
     beta = 0.5
     thetaNew = 1
     LNew = 1
@@ -38,15 +38,15 @@ def tfocs(smoothF, gradF, nonsmoothF, projectorF, x0,
         xOld = xNew
         xBarOld = xBarNew
         thetaOld = thetaNew
-
+        counter = counter + 1
        
         while True:
             thetaNew = 2/(1 + np.sqrt(1 + 4*LNew / (np.power(thetaOld,2) * LOld)))
             y = (1 - thetaNew) * xOld + thetaNew * xBarOld
-            xBarNew = projectorF(xBarNew - gradF(y)/(LNew * thetaNew), 
-                                  1/(LNew * thetaNew))
+            xNew = projectorF(y - gradF(y)/LNew, 1/LNew)
+            xBarNew = xNew
             if method == 'AT':
-                xNew = (1 - thetaNew) * xOld +  thetaNew * xBarNew
+                xNew = (thetaNew)*xOld + (1-thetaNew)*xBarNew
             elif method == 'LLM':
                 xNew = projectorF(y - gradF(y)/LNew, 1/LNew)
                 
@@ -61,13 +61,20 @@ def tfocs(smoothF, gradF, nonsmoothF, projectorF, x0,
             if LNew >= LHat:
                 break
             LNew = max(LNew/beta, LHat)
+            '''
+            if smoothF(xNew) <= smoothF(y) + np.dot(gradF(y), xNew - y) + \
+            0.5 * LNew * np.power(LA.norm(xNew - y),2):
+                break
+            LNew = LNew/beta
+            '''
+            #print("Function value: ", smoothF(xNew) + nonsmoothF(xNew))
+            #print("Step size: ", LNew)
+            #print("Difference between iterates: ", LA.norm(xNew - xOld)) 
             
             
-        '''    
-        print("Step size: ", LOld)
-        print("Function value: ", smoothF(xNew) + nonsmoothF(xNew))
-        print("Difference between iterates: ", LA.norm(xNew - xOld))    
-        '''
+        #print("Step size: ", LOld)
+        #print("Function value: ", smoothF(xNew) + nonsmoothF(xNew))
+        #print("Difference between iterates: ", LA.norm(xNew - xOld))    
         if LA.norm(xNew - xOld, 2)/max(1, LA.norm(xNew)) <= tol:
             break
         
@@ -75,5 +82,3 @@ def tfocs(smoothF, gradF, nonsmoothF, projectorF, x0,
             #break
     
     return np.array([xNew, smoothF(xNew) + nonsmoothF(xNew)])
-    
-    
