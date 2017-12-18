@@ -68,7 +68,7 @@ This is known as the \textit{composite form}. Here, $z\in\mathbb{R}^m$ is the op
 
 For both the problems (\ref{smooth_dual}), (\ref{composite}), given a sequence of step sizes $\{t_k\}$, the optimization begins with a point $\lambda_0\in\mathcal{K}^*$ and has the following updating rule respectively: 
 $$\lambda_{k+1} \leftarrow \underset{\lambda\in\mathcal{K}^*}{\text{arg min}} \| \lambda_k + t_k\nabla g_{\mu} (\lambda_k) - \lambda \|_2$$
-$$z_{k+1} \leftarrow \underset{z}{\text{arg min }} g_{sm}(z_k) + \langle \nabla g_{sm}(z_k), z-z_k\rangle + \frac{1}{2t_k} \| z-z_k \|^2 + h(z)$$
+$$z_{k+1} \leftarrow \underset{z} {\text{arg min }} g_{sm}(z_k) + \langle \nabla g_{sm}(z_k), z-z_k\rangle + \frac{1}{2t_k} \| z-z_k \|^2 + h(z).$$
 
 The approximate primal solution can then be recovered from the optimal value of $\lambda$ as follows:
       \begin{equation} \label{recover}
@@ -87,7 +87,7 @@ For the purposes of this project, we assume that the user has expressed the opti
 $$\text{minimize } \phi(z) \triangleq g(z) + h(z)$$
 which is simply equation $\ref{composite}$ except we have flipped the signs and turned the maximization problem into a minimization problem. To be notationally consistent we fix the update rule for $z_{k+1}$ provided in the background section to
 \begin{equation}\label{projection}
-	z_{k+1} \leftarrow \underset{z}\text{arg min } g(z_k) + \langle \nabla g(z_k), z - z_k\rangle + \frac{1}{2t_k} \|z - z_k \|^2 + h(z),
+	z_{k+1} \leftarrow \underset{z} {\text{arg min }} g(z_k) + \langle \nabla g(z_k), z - z_k\rangle + \frac{1}{2t_k} \|z - z_k \|^2 + h(z),
 \end{equation}
 where $t_k$ is the step size. @beck:etal:2011 assert that to ensure global convergence the following inequality must be satisfied:
 \begin{equation}\label{convcondition}
@@ -179,7 +179,7 @@ Here $t$ is the step size. The update in \textit{line 7} is then equivalent to a
 	\end{equation*}
 This clearly holds because $\frac{L_k\theta_k}{2}\|\bar{z}_k\|^2 - \frac{L_k\theta_k}{2} \| \frac{\nabla g(y_k)}{L_k\theta_k}- y_k\|^2$ is independent of $z$ (i.e., we are able to treat it has a constant), and thus it does not affect the optimization. Therefore, we can drop this term to get the proximity function in the last line. For Auslender and Teboulle's method, we take $z_{k+1}$ to be a linear combination of $y_k$ and $bar{z}_{k+1}$ which was updated with a call to the prox function.
 
-For the Lan, Lu, and Monteiro method, the update for $z_k$ in \textit{line 8} is not a linear combination of $y_k$ and $\bar{z}_{k+1}, but another projection which can be computed similarly using the proximity function as follows:
+For the Lan, Lu, and Monteiro method, the update for $z_k$ in \textit{line 8} is not a linear combination of $y_k$ and $\bar{z}_{k+1}$, but another projection which can be computed similarly using the proximity function as follows:
 	\begin{equation*}
 		\begin{aligned}
 		&\underset{z}{\text{arg min }} \langle \nabla g(y_k),z \rangle + \frac{L_k}{2} \|z-y_k\|^2 + h(z)\\
