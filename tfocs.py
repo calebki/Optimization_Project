@@ -32,16 +32,17 @@ def tfocs(smoothF, gradF, nonsmoothF, projectorF, x0,
     
     while True:
         itercount = itercount + 1
-        LOld = LNew
-        LNew = LOld * alpha
         xOld = xNew
         xBarOld = xBarNew
+        
+        LOld = LNew
+        LNew = LOld * alpha
         thetaOld = thetaNew
        
         while True:
-            thetaNew = 2/(1 + np.sqrt(1 + 4*LNew / (np.power(thetaOld,2) * LOld)))
+            thetaNew = 2/(1 + np.sqrt(1 + 4*(LNew/LOld) / (np.power(thetaOld,2))))
             y = (1 - thetaNew) * xOld + thetaNew * xBarOld
-            xBarNew = projectorF(xBarNew - gradF(y)/(LNew * thetaNew), 
+            xBarNew = projectorF(xBarOld - gradF(y)/(LNew * thetaNew), 
                                   1/(LNew * thetaNew))
             
             if solver == 'AT':
