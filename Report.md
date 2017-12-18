@@ -1,7 +1,7 @@
 ---
-title: Project Proposal
+title: Implementing 2 First-Order Conic Solvers in Python
 author: Caleb Ki & Sanjana Gupta
-date: November 29, 2017
+date: December 12th, 2017
 geometry: "left=3cm,right=3cm,top=2cm,bottom=2cm"
 fontsize: 11pt
 header-includes:
@@ -12,6 +12,7 @@ header-includes:
 bibliography: project.bib
 output: pdf_document
 ---
+
 # Background
 
 Templates for first-order conic solvers, or TFOCS for short, is a software package that provides efficient solvers for various convex optimization problems [@beck:etal:2011]. With problems in signal processing, machine learning, and statistics in mind, the creators developed a general framework and approach for solving convex cone problems. The standard routine within the TFOCS library is a four-step process. The notation used below is taken from the paper accompanying the software package.
@@ -78,15 +79,15 @@ Equation \ref{recover} shows that the fundamental computational primitive in thi
 
 # Implementation
 
-As stated previously, TFOCS, when given the correct conic formulation of an optimization problem, will apply various first-order solvers to the smoothed dual problem. The goal of this project is to port 2 of the 6 available first-order solvers in TFOCS software package from Matlab into Python. Specifically, we will be implementing the default method in TFOCS, the single-projection method developed by @ausl:tebo:2006, as well as the dual-projection method developed by @lan:etal:2011. Furthermore, we would like our solvers to accept a pythonic version of the calling sequence found in the user manual written by @beck:etal:2014, \texttt{[x, out] = tfocs(smoothF, gradF, projectorF, x0m tol, gamma)}. Given  a smooth function $\texttt{smoothF}$, the gradient of the smooth function \texttt{gradF}, a nonsmooth function $\texttt{projectorF}$, and an initial point $\texttt{x0}$, the solver would return the optimal vector $\texttt{x}$ and the primal solution $\texttt{out}$. For the purposes of this project, we are starting with the assumption that the user has expressed the optimization problem of concern in the correct specific conic form. As stated earlier, once the problem has been wrangled into the correct form, they can be solved through first-order methods.
+As stated previously, TFOCS, when given the correct conic formulation of an optimization problem, will apply various first-order solvers to the smoothed dual problem. For this project, we port 2 of the 6 available first-order solvers in TFOCS software package from Matlab into Python. Specifically, the 2 solvers are the default method in TFOCS, the single-projection method developed by @ausl:tebo:2006, and the dual-projection method developed by @lan:etal:2011. Given  a smooth function, the gradient of the smooth function, a nonsmooth function, and an initial point, the solver returns the optimal vector and the primal solution. 
 
 ## Motivation
 
-The first-order solvers we implement assume that the optimization problem has been massaged into the following unconstrained form:
+For the purposes of this project, we assume that the user has expressed the optimization problem of concern in the correct specific conic form. Once the problem has been wrangled into the correct form, they can be solved through first-order methods. We assume that the optimization problem has been massaged into the following unconstrained form:
 $$\text{minimize } \phi(z) \triangleq g(z) + h(z)$$
-which is simply problem $\ref{composite}$ except we have flipped the signs and turned the maximization problem into a minimization problem. To be notationally consistent we fix the update rule for $z_{k+1}$ provided in the background section to
+which is simply equation $\ref{composite}$ except we have flipped the signs and turned the maximization problem into a minimization problem. To be notationally consistent we fix the update rule for $z_{k+1}$ provided in the background section to
 \begin{equation}\label{projection}
-	z_{k+1} \leftarrow \text{arg min } g(z_k) + \langle \nabla g(z_k), z - z_k\rangle + \frac{1}{2t_k} \|z - z_k \|^2 + h(z),
+	z_{k+1} \leftarrow \underset{z}\text{arg min } g(z_k) + \langle \nabla g(z_k), z - z_k\rangle + \frac{1}{2t_k} \|z - z_k \|^2 + h(z),
 \end{equation}
 where $t_k$ is the step size. @beck:etal:2011 assert that to ensure global convergence the following inequality must be satisfied:
 \begin{equation}\label{convcondition}
@@ -94,11 +95,11 @@ where $t_k$ is the step size. @beck:etal:2011 assert that to ensure global conve
 \end{equation}
 If we assume that the gradient of $g$ satisfies, 
 $$\| \nabla g(x) - \nabla g(y) \|_* \leq L \| x - y \| \: \forall x,y \in \text{dom} \phi$$
-(i.e., it satifies a generalized Lipschitz criterion), then convergence condition $\ref{convcondition}$ holds for all $t_k \leq L^{-1}.$
+(i.e., it satifies a generalized Lipschitz criterion), then convergence condition $\ref{convcondition}$ holds for all $t_k \leq L^{-1}.$ Of course $L$ is difficult to find. Rather than finding the except value for $L$, the solvers us an estimate $L_k$ at each iteration which is explained in detail below. Returning to the main point, all the first-order solvers discussed in @beck:etal:2011 including the 2 we implement are based on update rule $\ref{projection}$ and convergence criterion $\ref{convcondition}.$
 
-## Implementation
+## The Algorithm
 
-The repeated calls to a generalized projection as described above manifests itself in the algorithm below. We are assuming that the user has provided the smooth function $g$ and its gradient, the nonsmooth function $h$ and its prox function, a tolerance level for convergence, and a starting point $x_0.$
+The repeated calls to a generalized projection as described above manifests itself in the algorithm below. Again, we are assuming that the user has provided the smooth function $g$ and its gradient, the nonsmooth function $h$ and its prox function, a tolerance level for convergence, and a starting point $x_0.$
 
 \begin{algorithm}
 \caption{Auslender and Teboulle's Algorithm}\label{AT}
@@ -131,70 +132,74 @@ The key difference between these two similar variants is that, Lan, Lu, and Mont
 
 ## Justification
 
+In the following section, we go through several lines in our algorithm to justify and clarify what the solvers are actually doing. The two main components of the algorithm are how the solvers are updating the step size (backtracking) and how the solvers are updating the solution.
 
-In the following section, we go through several lines in our algorithm to justify and clairfy what the solver is actually doing. We begin with a discussion about step size (\textit{lines 3,9-16}).
-Generally it's very difficult to calculate $L,$ and the step size $\frac{1}{L}$ is often too conservative. While the performance can be improved by reducing $L$, reducing $L$ too much can cause the algorithm to diverge. All these problems are simultaneously resolved by using \textit{backtracking}. Backtracking is a technique used to find solutions to optimization problems by building partial candidates to the solution called \textit{backtracks}. Each backtrack is dropped as soon as the algorithm realizes that it can not be extended to a valid solution. Applying this technique to the Lipschitz constant in our problem, we estimate the global constant L by $L_k$ which preserves convergence if the following inequality holds:
+### Updating Step Size
+
+We begin with a discussion about step size (\textit{lines 3,9-16}). Generally it's very difficult to calculate $L,$ and the step size $\frac{1}{L}$ is often too conservative. While the performance can be improved by reducing $L$, reducing $L$ too much can cause the algorithm to diverge. All these problems are simultaneously resolved by using \textit{backtracking}. Backtracking is a technique used to find solutions to optimization problems by building partial candidates to the solution called \textit{backtracks}. Each backtrack is dropped as soon as the algorithm realizes that it cannot be extended to a valid solution. Applying this technique to the Lipschitz constant in our problem, we estimate the global constant $L$ by $L_k$ which preserves convergence if the following inequality holds:
 	\begin{equation}\label{Linequality1}
 	g(z_{k+1})\leq g(y_k) + \langle \nabla g(y_k), z_{k+1}-y_k \rangle + \frac{1}{2} L_k \|z_{k+1}-y_k\|^2.
 	\end{equation} 
-It is observed that if $g(z_{k+1})$ is very close to $g(y_k)$, equation (\ref{Linequality1}) suffers from severe cancellation errors. Generally, cancellation errors occur if $g(y_k)-g(z_{k+1})<\gamma g(z_{k+1})$ where the threshold for $\gamma$ is around $10^{-8}$ to $10^{-6}$. To be safe, we consider $\gamma=10^{-4}$. In this case, we use the following inequality to ensure convergence:
+If $g(z_{k+1})$ is very close to $g(y_k)$, equation (\ref{Linequality1}) suffers from severe cancellation errors. Generally, cancellation errors occur if $g(y_k)-g(z_{k+1})<\gamma g(z_{k+1})$ where the threshold for $\gamma$ is around $10^{-8}$ to $10^{-6}$. If we believe that the algorithm will suffer from cancellation errors, we use the following inequality to ensure convergence:
 	\begin{equation}\label{Linequality2}
 	|\langle y_k-z_{k+1},\nabla g(z_{k+1})- \nabla g(y_k)\rangle | \leq \frac{1}{2}L_k \|z_{k+1}-y_k\|^2.
 	\end{equation}
 
-Note that the above inequalities (\ref{Linequality1}), (\ref{Linequality2}) automatically hold for $L_k\geq L$. Let's consider what's going on in iteration $k$. If $L_k \geq L$ then the relevant inequality automatically holds and we do not update $L_k$ further (\textit{i.e.} $L_k=\alpha L_{k-1}$). If however $L_k<L$ we simply increase $L_k$ by a factor of $\frac{1}{\beta}$ to obtain $\frac{L_k}{\beta}$ (for fixed $\beta\in(0,1)$) which eventually results in $L_k\geq L$. Thus, backtracking preserves global convergence. To combine both the above cases in one step, we introduce $\hat{L}$ which is the smallest value of $L_k$ that satisfies the relevant inequality (\ref{Linequality1}) or (\ref{Linequality2}) at the $k^{th}$ iteration. $L_k$ is then updated as max$\{\frac{L_k}{\beta},\hat{L}\}$. Here, $\hat{L}$ is obtained by changing the inequalities (\ref{Linequality1}), (\ref{Linequality2}) to equalities and solving for $L_k$.
+Note that inequalities (\ref{Linequality1}) and (\ref{Linequality2}) automatically hold in the case when $L_k\geq L$, so the solver only needs to check if inequalities (\ref{Linequality1}) or (\ref{Linequality2}) hold (based on whether $g(y_k)-g(z_{k+1})<\gamma g(z_{k+1})$). If it is the case the relevant inequality holds then we need not update $L_k$ further. If however the inequality does not hold we need to increase $L_k$ until it does (i.e., backtrack until we have satisfied the convergence criterion). As part of this backtracking process we introduce $\hat{L}$ which is the smallest value of $L_k$ that satisfies the relevant inequality (\ref{Linequality1}) or (\ref{Linequality2}) at the $k$th iteration holds or not). $L_k$ is then updated as max$\{\frac{L_k}{\beta},\hat{L}\}$. Here, $\hat{L}$ is obtained by changing the inequalities (\ref{Linequality1}), (\ref{Linequality2}) to equalities and solving for $L_k$. This process of checking and updating $L_k$ is repeated until $L_k$ satisfies inequalities (\ref{Linequality1}) or (\ref{Linequality2}).
 
-In every iteration we try to reduce the value of the Lipschitz estimate $L_k$ (\textit{line 3}). This is done to improve the performance of the algorithm and is achieved by updating $L_k=\alpha L_{k-1}$ for some fixed $\alpha\in (0,1]$. Reducing $L_k$ at each iteration can of course lead to an increased number of backtracks which we try to minimize by picking an appropriate value of $\alpha$. For these kinds of solvers, generally $\alpha = 0.9$ is used which is what we have set as the default method. 
+In every iteration we try to reduce the value of the Lipschitz estimate $L_k$ (\textit{line 3}). This is done to improve the performance of the algorithm and is achieved by updating $L_k=\alpha L_{k-1}$ for some fixed $\alpha\in (0,1]$. Reducing $L_k$ at each iteration can of course lead to an increased number of backtracks which we try to minimize by picking an appropriate value of $\alpha$. For these kinds of solvers, generally $\alpha = 0.9$ is used which is what we have set $\alpha$ to be. 
 
 Intertwined with updating $L_k$ is the problem of updating $\theta_k$ (\textit{line 5}). First we establish bounds on the prediction error at the $(k+1)$st iteration as follows:
 	\begin{equation}
 	\phi(z_{k+1})-\phi(z^{\star})\leq\frac{1}{2}L{\theta_k}^2\|z_0-z^{\star}\|^2 \leq 2\frac{L}{k^2} \|z_0-z^{\star}\|^2
 	\end{equation}
-This shows that the error bound is directly proportional to $L_k {\theta_k}^2$. In a simple backtracking step, as we increase $L_k$ (by at least a factor of $1/\beta$), the error bound increases too. This can be avoided by updating $\theta_k$ along with $L_k$ in each iteration by using the following inequality which ensures that convergence is preserved:
+This shows that the bound on the error is directly proportional to $L_k {\theta_k}^2$. In a simple backtracking step, as we increase $L_k$ (by at least a factor of $1/\beta$), the bound on the error increases too. This can be avoided by updating $\theta_k$ along with $L_k$ in each iteration by using the following inequality which ensures that convergence is preserved:
 	\begin{equation}
 	\frac{L_{k+1} {\theta_{k+1}}^2 }{1-\theta_{k+1}} \geq L_{k} {\theta_{k}}^2
 	\end{equation}
 Solving for $\theta_{k+1}$ gives the update as in \textit{line 5} of algorithm 1.
 
-The algorithm states in \textit{line 7} that to update $\bar{z}_k$  we must find the arg min of some function of the gradient of $g$ and nonsmooth function $h.$ This can be simply reduced to the proximity function for $h$ with step size $\frac{1}{L}$ evaluated at $y_k - \frac{\nabla g(y_k)}{L}$ (as stated before, we are assuming that the user is providing this prox function). The proximity operator \textit{prox} of a convex function $h$ at $x$ is defined as the unique solution to the following:
+### Updating $z_{k+1}$
+
+The algorithm states in \textit{line 7} that to update $\bar{z}_k$  we must find the arg min of some function of the gradient of $g$ and nonsmooth function $h.$ This can be simply reduced to the proximity function for $h$ with step size $\frac{1}{L}$ evaluated at $\bar{z}_k - \frac{\nabla g(y_k)}{L_k \theta_k}$ where $y_k$ is a linear combination of $z_k$ and $\bar{z}_k$. The proximity operator \textit{prox} of a convex function $h$ at $x$ is defined as the unique solution to the following:
 	\begin{equation}
 	\text{prox}_{t,h}(x) = \text{arg }\underset{z}{\text{min }} h(y) + \frac{1}{2t} \|x-z\|^2
 	\end{equation}
 Here $t$ is the step size. The update in \textit{line 7} is then equivalent to a proximity function as follows:
 	\begin{equation*}
 		\begin{aligned}
-		&\underset{z}{\text{arg min }} \langle \nabla g(y_k),z \rangle + \frac{L}{2} \|z-y_k\|^2 + h(z)\\
-		&= \underset{z}{\text{arg min }} h(z) + \frac{L}{2}\Bigg( \frac{2}{L} \langle \nabla g(y_k),z \rangle + \|z\|^2 -2\langle y_k,z\rangle + \|y_k\|^2\Bigg)\\
-		&= \underset{z}{\text{arg min }} h(z) + \frac{L}{2}\Bigg( 2 \langle \frac{\nabla g(y_k)}{L}-y_k, z \rangle + \|z\|^2 + \|y_k\|^2\Bigg)\\
-		&= \underset{z}{\text{arg min }} h(z) + \frac{L}{2}\Bigg( 2 \langle \frac{\nabla g(y_k)}{L}-y_k,z \rangle + \|z\|^2\Bigg) + \frac{L}{2}\|y_k\|^2\\
-		&= \underset{z}{\text{arg min }} h(z) + \frac{L}{2}\Bigg( \|\frac{g(y_k)}{L}-y_k+z\|^2 - \| \frac{\nabla g(y_k)}{L}-y_k\|^2\Bigg)  + \frac{L}{2}\|y_k\|^2\\
-		&= \underset{z}{\text{arg min }} h(z) + \frac{L}{2} \|y_k - \frac{\nabla g(y_k)}{L}-z\|^2 \\
-		&= \text{prox}_{\frac{1}{L},h} \Bigg(y_k - \frac{\nabla g(y_k)}{L}\Bigg)\label{prox1}
+		&\underset{z}{\text{arg min }} \langle \nabla g(y_k),z \rangle + \frac{L_k \theta_k}{2} \|z-\bar{z}_k\|^2 + h(z)\\
+		&= \underset{z}{\text{arg min }} h(z) + \frac{L_k\theta_k}{2}\Bigg( \frac{2}{L_k\theta_k} \langle \nabla g(y_k),z \rangle + \|z\|^2 -2\langle \bar{z}_k,z\rangle + \|\bar{z}_k\|^2\Bigg)\\
+		&= \underset{z}{\text{arg min }} h(z) + \frac{L_k\theta_k}{2}\Bigg( 2 \langle \frac{\nabla g(y_k)}{L_k\theta_k}-\bar{z}_k, z \rangle + \|z\|^2 + \|\bar{z}_k\|^2\Bigg)\\
+		&= \underset{z}{\text{arg min }} h(z) + \frac{L_k\theta_k}{2}\Bigg( 2 \langle \frac{\nabla g(y_k)}{L_k\theta_k}-y_k,z \rangle + \|z\|^2\Bigg) + \frac{L_k\theta_k}{2}\|y_k\|^2\\
+		&= \underset{z}{\text{arg min }} h(z) + \frac{L_k\theta_k}{2}\Bigg( \|\frac{\nabla g(y_k)}{L_k\theta_k}-\bar{z}_k+z\|^2 - \| \frac{\nabla g(y_k)}{L_k\theta_k}- y_k\|^2\Bigg)  + \frac{L_k\theta_k}{2}\|\bar{z}_k\|^2\\
+		&= \underset{z}{\text{arg min }} h(z) + \frac{L_k\theta_k}{2} \|\bar{z}_k - \frac{\nabla g(y_k)}{L_k\theta_k}-z\|^2 \\
+		&= \text{prox}_{\frac{1}{L_k\theta_k},h} \Bigg(\bar{z}_k - \frac{\nabla g(y_k)}{L_k\theta_k}\Bigg)
 		\end{aligned}
 	\end{equation*}
-This clearly holds since $\frac{L}{2} \|y_k\|^2 - \frac{L}{2}\| \frac{\nabla g(y_k)}{L}-y_k\|^2$ is independent of $z$ (i.e., we are able to treat it has a constant), and thus it does not affect the optimization. Therefore, we can drop this term to get the proximity function in the last line. 
+This clearly holds because $\frac{L_k\theta_k}{2}\|\bar{z}_k\|^2 - \frac{L_k\theta_k}{2} \| \frac{\nabla g(y_k)}{L_k\theta_k}- y_k\|^2$ is independent of $z$ (i.e., we are able to treat it has a constant), and thus it does not affect the optimization. Therefore, we can drop this term to get the proximity function in the last line. For Auslender and Teboulle's method, we take $z_{k+1}$ to be a linear combination of $y_k$ and $bar{z}_{k+1}$ which was updated with a call to the prox function.
 
-For the Lan, Lu, and Monteiro method, the update for $z_k$ in \textit{line 8} can be computed similarly using the proximity function as follows:
+For the Lan, Lu, and Monteiro method, the update for $z_k$ in \textit{line 8} is not a linear combination of $y_k$ and $\bar{z}_{k+1}, but another projection which can be computed similarly using the proximity function as follows:
 	\begin{equation*}
 		\begin{aligned}
-		&\underset{z}{\text{arg min }} \langle \nabla g(y_k),z \rangle + \frac{L\theta_k}{2} \|z-\bar{z}_k\|^2 + h(z)\\
-		&= \underset{z}{\text{arg min }} h(z) + \frac{L\theta_k}{2}\Bigg( \frac{2}{L\theta_k} \langle \nabla g(y_k),z \rangle + \|z\|^2 -2\langle \bar{z}_k,z\rangle + \|\bar{z}_k\|^2\Bigg)\\
-		&= \underset{z}{\text{arg min }} h(z) + \frac{L\theta_k}{2}\Bigg( 2 \langle \frac{\nabla g(y_k)}{L\theta_k}-\bar{z}_k, z \rangle + \|z\|^2 + \|\bar{z}_k\|^2\Bigg)\\
-		&= \underset{z}{\text{arg min }} h(z) + \frac{L\theta_k}{2}\Bigg( 2 \langle \frac{\nabla g(y_k)}{L\theta_k}-y_k,z \rangle + \|z\|^2\Bigg) + \frac{L\theta_k}{2}\|y_k\|^2\\
-		&= \underset{z}{\text{arg min }} h(z) + \frac{L\theta_k}{2}\Bigg( \|\frac{\nabla g(y_k)}{L\theta_k}-\bar{z}_k+z\|^2 - \| \frac{\nabla g(y_k)}{L\theta_k}- y_k\|^2\Bigg)  + \frac{L\theta_k}{2}\|\bar{z}_k\|^2\\
-		&= \underset{z}{\text{arg min }} h(z) + \frac{L\theta_k}{2} \|\bar{z}_k - \frac{\nabla g(y_k)}{L\theta_k}-z\|^2 \\
-		&= \text{prox}_{\frac{1}{L\theta_k},h} \Bigg(\bar{z}_k - \frac{\nabla g(y_k)}{L\theta_k}\Bigg)
+		&\underset{z}{\text{arg min }} \langle \nabla g(y_k),z \rangle + \frac{L_k}{2} \|z-y_k\|^2 + h(z)\\
+		&= \underset{z}{\text{arg min }} h(z) + \frac{L_k}{2}\Bigg( \frac{2}{L_k} \langle \nabla g(y_k),z \rangle + \|z\|^2 -2\langle y_k,z\rangle + \|y_k\|^2\Bigg)\\
+		&= \underset{z}{\text{arg min }} h(z) + \frac{L_k}{2}\Bigg( 2 \langle \frac{\nabla g(y_k)}{L_k}-y_k, z \rangle + \|z\|^2 + \|y_k\|^2\Bigg)\\
+		&= \underset{z}{\text{arg min }} h(z) + \frac{L_k}{2}\Bigg( 2 \langle \frac{\nabla g(y_k)}{L_k}-y_k,z \rangle + \|z\|^2\Bigg) + \frac{L_k}{2}\|y_k\|^2\\
+		&= \underset{z}{\text{arg min }} h(z) + \frac{L_k}{2}\Bigg( \|\frac{g(y_k)}{L_k}-y_k+z\|^2 - \| \frac{\nabla g(y_k)}{L_k}-y_k\|^2\Bigg)  + \frac{L_k}{2}\|y_k\|^2\\
+		&= \underset{z}{\text{arg min }} h(z) + \frac{L_k}{2} \|y_k - \frac{\nabla g(y_k)}{L_k}-z\|^2 \\
+		&= \text{prox}_{\frac{1}{L_k},h} \Bigg(y_k - \frac{\nabla g(y_k)}{L_k}\Bigg)\label{prox1}
 		\end{aligned}
 	\end{equation*}
-As observed earlier, this clearly holds follows since the term $\frac{L\theta_k}{2}\|\bar{z}_k\|^2 - \frac{L\theta_k}{2} \| \frac{\nabla g(y_k)}{L\theta_k}- y_k\|^2$ being independent of $z$ does not affect the minimization and can be dropped to obtained the proximity function as in the last line.
+Since the term $\frac{L_k}{2} \|y_k\|^2 - \frac{L_k}{2}\| \frac{\nabla g(y_k)}{L_k}-y_k\|^2$ is independent of $z,$ it does not affect the minimization and can be dropped to obtained the proximity function as in the last line.
 
-\textit{Line 17} of the algorithm states that if the distance between sequential $z_k$'s becomes sufficiently small (i.e., less than the given tolerance) then the algorithm has converged and we have found our optimal $z.$ Usually, tolerance is taken to be $10^{-8}.$ 
+The final piece to the algorithm is the stopping criterion. \textit{Line 17} of the algorithm states that if the distance between sequential $z_k$'s becomes sufficiently small (i.e., less than the given tolerance) then the algorithm has converged and we have found our optimal $z.$ Usually, tolerance is taken to be $10^{-8}.$ 
 
-# Examples
-In this section we illustrate the performance of our code via afew examples. In particular, we solve the LASSO problem on different (simulated) datasets and evaluate the performance of the two techniques in terms of their error rates, number of iterations and run times.  
-\textit{Data setting:} We ran LASSO on different linear datasets. The outcome variable $y$ was generated by 
-\[ \mathbf{y} = \mathbf{X} \boldsymbol{\beta} + \boldsymbol{\epsilon}, \hspace{1cm} \boldsymbol{\epsilon} \sim  \mathcal{N}_{n} (0,  \mathbf{I})\]
-where the independent variables $\mathbf{x}_i$ are iid Gaussian. Further, $\boldsymbol{\beta} = [0_{p-k},10_{k}]^T$, that is, the last k variables are truly predictive whereas the the first $p-k$ variables are unrelated. 8 different data sets were generated for all combinations of the following parameter settings, $n \in \{100,500\}$, $p \in \{\frac{n}{2}, 2n \}$ and $k \in \{0.5 p,0.1 p\}$. We fit Lasso models to each data setting using both AT and LLM. Table 1 summarizes the performance of the 2 techniques; the calculations are averaged over 100 datasets per setting.
+# Simulation Study
+
+In this section we compare the performance of our two different solvers through an example. In particular, we solve the Lasso problem on different simulated datasets and evaluate the two different solvers by their error rates, number of iterations, and run times. The outcome variable $y$ was generated by 
+$$ \mathbf{y} = \mathbf{X} \boldsymbol{\beta} + \boldsymbol{\epsilon}, \hspace{1cm} \boldsymbol{\epsilon} \sim  \mathcal{N}_{n} (0,  \mathbf{I})$$
+where the independent variables $\mathbf{X}_i$ are iid Gaussian with mean $0$ and variance $1$. Further, $\boldsymbol{\beta} = [0_{p-k},10_{k}]^T$, that is, the last k $\mathbf{X}_i$'s have a nonzero effect on $y$ whereas the the first $p-k$ $\mathbf{X}_i$'s have no relationship with $y$. 100 datasets were generated for all combinations of the following parameter settings, $n \in \{100, 500\}$, $p \in \{\frac{n}{2}, 2n \}$ and $k \in \{0.5 p,0.1 p\}$ (giving us 8 different settings total). We fit Lasso models for each simulation using both AT and LLM. Table 1 summarizes the performance of the 2 techniques; the calculations are averaged over the 100 simulations per setting.
 
 
 
