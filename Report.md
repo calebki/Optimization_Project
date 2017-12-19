@@ -14,6 +14,13 @@ header-includes:
    - \usepackage{subcaption}
    - \usepackage{float}
    - \usepackage{advdate}
+   - \usepackage[utf8]{inputenc}
+   - \usepackage[table]{xcolor}
+   -\usepackage{multirow}
+   -\usepackage{array}
+ 	\newcolumntype{P}[1]{>{\centering\arraybackslash}p{#1}}
+ 	\newcolumntype{M}[1]{>{\centering\arraybackslash}m{#1}}
+
 bibliography: project.bib
 output: pdf_document
 abstract: In this paper we consider first-order solvers for convex cone problems. We introduce the general framework for these kinds of problems developed by the creators of the TFOCS software. The approach works by taking a conic formulation of an optimization problem, determining its dual, applying smoothing, and finally solving via a first-order method. The paper goes into detail about two of the six solvers available in TFOCS, Auslender and Teboulle’s method as well as Lam, Lu, and Monteiro’s method. In particular, the paper discusses how these algorithms use backtracking and projections to efficiently get a solution. Finally, a numerical experiment with the Lasso problem displays the performance of these two solvers in a variety of settings.
@@ -240,11 +247,64 @@ We fit models corresponding to $\lambda = 0, \| X^T\epsilon\|_{\infty}$. $\lambd
 Table 1 summarizes the performance of the 2 techniques where the calculations are averaged over 100 simulations per setting.
 
 
-\begin{table}
-  \includegraphics[width=\linewidth]{Table}
-  \caption{Simulation resuls for fitting LASSO to the datasets with $\lambda = 0$ and $\lambda =\| X^T\epsilon\|_{\infty}$.}
-  \label{tbl:excel-table}
-\end{table}
+\setlength{\arrayrulewidth}{0.5mm}
+\setlength{\tabcolsep}{20pt}
+\renewcommand{\arraystretch}{2.5}
+ 
+\newcolumntype{s}{>{\columncolor[HTML]{AAACED}} p{0.5cm}}
+ 
+\arrayrulecolor[HTML]{AAACED}
+ 
+\begin{tabular}{|P{0.5cm}|P{0.5cm}|P{0.5cm}|P{0.9cm}|P{0.9cm}|P{0.9cm}|P{0.9cm}|P{0.9cm}|P{0.9cm}|}
+\hline
+\multicolumn{3}{|M{4cm}|}{$\lambda = 0$}  & \multicolumn{3}{M{5.5cm}|}{AT} & \multicolumn{3}{M{5.5cm}|}{LLM}\\
+\hline
+n & p & k & time & error & numiters & time & error & numiters  \\
+\hline
+\rowcolor[HTML]{F4F6F6} 500	&	250	&	125	&	0.2529	&	0.0089	&	164.75	&	0.3120	&	0.0089	&	165.7\\
+\rowcolor[HTML]{F4F6F6} 500	&	250	&	25	&	0.2608	&	0.0199	&	168.46	&	0.3230	&	0.0199	&	169.33\\
+\rowcolor[HTML]{E5E8E8} 100	&	50	&	25	&	0.0247	&	0.0197	&	135.78	&	0.0290	&	0.0197	&	135.91\\
+\rowcolor[HTML]{E5E8E8} 100	&	50	&	5	&	0.0243	&	0.0441	&	133.86	&	0.0286	&	0.0441	&	133.87\\
+\rowcolor[HTML]{F4F6F6} 500	&	1000	&	500	&	1.5553	&	0.7076	&	203.51	&	1.9363	&	0.7076	&	203.82\\
+\rowcolor[HTML]{F4F6F6} 500	&	1000	&	100	&	1.2353	&	0.7094	&	197.23	&	1.5387	&	0.7094	&	197.9\\
+\rowcolor[HTML]{E5E8E8} 100	&	200	&	100	&	0.0641	&	0.7071	&	160.85	&	0.0765	&	0.7071	&	160.4\\
+\rowcolor[HTML]{E5E8E8} 100	&	200	&	20	&	0.0594	&	0.7071	&	152.73	&	0.0722	&	0.7071	&	153.17\\
+\hline
+\end{tabular}
+\\
+\\
+\begin{tabular}{|P{0.5cm}|P{0.5cm}|P{0.5cm}|P{0.9cm}|P{0.9cm}|P{0.9cm}|P{0.9cm}|P{0.9cm}|P{0.9cm}|}
+\hline
+\multicolumn{3}{|M{4cm}|}{$\lambda = \| X^T\epsilon\|_{\infty}$}  & \multicolumn{3}{M{5.5cm}|}{AT} & \multicolumn{3}{M{5.5cm}|}{LLM}\\
+\hline
+n & p & k & time & error & numiters & time & error & numiters  \\
+\hline
+\rowcolor[HTML]{F4F6F6}500	&	250	&	125	&	0.2058	&	0.0262	&	132.4	&	0.1786	&	0.0230	&	94.03\\
+\rowcolor[HTML]{F4F6F6}500	&	250	&	25	&	0.2486	&	0.0170	&	157.04	&	0.1358	&	0.0155	&	70.83\\
+\rowcolor[HTML]{E5E8E8}100	&	50	&	25	&	0.0197	&	0.0447	&	108.16	&	0.0176	&	0.0435	&	81.38\\
+\rowcolor[HTML]{E5E8E8}100	&	50	&	5	&	0.0228	&	0.0284	&	122.97	&	0.0134	&	0.0286	&	61.62\\
+\rowcolor[HTML]{F4F6F6}500	&	1000	&	500	&	3.5022	&	0.8875	&	464.76	&	4.9835	&	0.8996	&	524.07\\
+\rowcolor[HTML]{F4F6F6}500	&	1000	&	100	&	2.3142	&	0.0467	&	368.68	&	1.0246	&	0.0277	&	131.85\\
+\rowcolor[HTML]{E5E8E8}100	&	200	&	100	&	0.1347	&	0.8856	&	345.91	&	0.1736	&	0.8921	&	364.32\\
+\rowcolor[HTML]{E5E8E8}100	&	200	&	20	&	0.0974	&	0.0683	&	246.88	&	0.0494	&	0.0570	&	103.4\\
+\hline
+\end{tabular}
+\\
+\\
+\begin{tabular}{|P{0.5cm}|P{0.5cm}|P{0.5cm}|P{0.9cm}|P{0.9cm}|P{0.9cm}|P{0.9cm}|P{0.9cm}|P{0.9cm}|}
+\hline
+\multicolumn{3}{|M{4cm}|}{$\lambda = \| X^T\epsilon\|_{\infty}$}  & \multicolumn{3}{M{5.5cm}|}{AT} & \multicolumn{3}{M{5.5cm}|}{LLM}\\
+\hline
+n & p & k & time & error & numiters & time & error & numiters  \\
+\hline
+\rowcolor[HTML]{F4F6F6}500500	&	1000	&	800	&	3.0070	&	0.9313	&	505.05	&	4.4929	&	0.9447	&	594.73\\
+\rowcolor[HTML]{F4F6F6}500100	&	50	&	40	&	0.0182	&	0.0593	&	110.33	&	0.0206	&	0.0588	&	105.63\\
+\rowcolor[HTML]{E5E8E8}500	&	250	&	200	&	0.1939	&	0.0331	&	127.04	&	0.2292	&	0.0315	&	123.01\\
+\rowcolor[HTML]{E5E8E8}100	&	200	&	160	&	0.1482	&	0.9331	&	374.36	&	0.1951	&	0.9405	&	406.09\\
+\hline
+\end{tabular}
+
+
 
 
 The top half of each table corresponds to overdetermined cases whereas the bottom half corresponds to undetdetermined ones. As we can see, neither one of the methods performs better than the other for every scenario. In the case where $\lambda=0$ (i.e. ordinary least squares), we observe that AT performs better than LLM. While the errors for both the methods are almost the same, the average number of iterations are similar which resuls in AT converging faster as it only computes a single projection in every iteration. In the overdetermined case, LLM performs better than AT in terms of both run time and error with the performance being significantly better for very sparse data (ratio of k to p is 1:10). In the underdetermined case, however, we observe that AT outperforms LLM when the ratio of k to p is 1:2 and 4:5. It has less iterations (making it almost 1.4 times as fast as LLM) and has lower error rates. This trend is particularly visible in the underdetermined case for $\lambda=0$ as well. 
