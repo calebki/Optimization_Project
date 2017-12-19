@@ -12,6 +12,7 @@ header-includes:
    - \usepackage{graphicx}
    - \usepackage{caption}
    - \usepackage{subcaption}
+   - \usepackage{float}
    - \usepackage{advdate}
 bibliography: project.bib
 output: pdf_document
@@ -207,10 +208,28 @@ where the independent variables $\mathbf{X}_i$ are iid Gaussian with mean $0$ an
 \begin{equation} \label{composite}
           \begin{aligned}
 		& \underset{x}{\text{minimize}} 
-		& &  \frac{1}{2} \|Ax - b\|_2^2 + \lambda \|x\|_1 \\
+		& &  \frac{1}{2} \|X\beta - Y\|_2^2 + \lambda \|\beta\|_1 \\
            \end{aligned}
      \end{equation}
-We fit models corresponding to $\lambda = 0, \| X^T\epsilon\|_{\infty}$. Table 1 summarizes the performance of the 2 techniques; the calculations are averaged over the 100 simulations per setting.
+We fit models corresponding to $\lambda = 0, \| X^T\epsilon\|_{\infty}$. $\lambda = 0$ simply gives the ordinary least squares solution whereas $\lambda = \| X^T\epsilon\|_{\infty}$ gives the correct sparse solution (theoretically). For the Lasso, the smooth function is clearly the squared 2-norm whereas the non-smooth function is the 1-norm penalty term. The arguments passed to the tfocs functions are as follows
+\begin{equation}
+\begin{aligned}
+&g= \frac{1}{2} \|X\beta - Y\|_2^2 \\
+&\nabla g = X^T X\beta - X^T Y \\
+&h = \lambda \|\beta\|_1 \\
+&\text{prox}_{t,h} = \text{softthreshold}(y,t\lambda)\text{ where }\\
+		& \text{softthreshold}(y,t\lambda) = \text{sgn}(y)\max\{|y|-t\lambda\} = 
+			\begin{cases} 
+		      y+t\lambda & y\leq -t\lambda \\
+		      0 & |y|\leq -t\lambda \\
+		      y-t\lambda & y\geq t\lambda 
+		   \end{cases}
+\end{aligned}
+\end{equation}
+
+
+Table 1 summarizes the performance of the 2 techniques; the calculations are averaged over 100 simulations per setting.
+
 
 \begin{table}
   \includegraphics[width=\linewidth]{Table}
@@ -218,10 +237,13 @@ We fit models corresponding to $\lambda = 0, \| X^T\epsilon\|_{\infty}$. Table 1
   \label{tbl:excel-table}
 \end{table}
 
-The top half of each table corresponds to overdetermined cases whereas the bottom half corresponds to undetdetermined ones. As we can see, neither one of the methods performs better than the other always. In the case where $\lambda=0$ (i.e. ordinary least squares), we observe that AT performs better than LLM irrespective of the ratio of the observations: variables or the sparcity of the data. While the errors for both the methods are almost the same, the average number of iterations are silimar which resuls in AT converging much faster as it only computes a single projection in every iteration. The second case is more interesting. In the overdetermined case, LLM performs better than AT in terms of both run time and error with the performance being significantly better for sparse data (k:p ratio 0.1). In the underdetermined case, however, we observe that AT outperforms LLM when the k:p ratio is $0.5$. It has lesser number of iterations (making it almost 1.4 times as fast as LLM) and has lower error rates. This trend is particularly visible in the underdetrmined case for $\lambda=0$ as well. Summarizing, we observe that \\
+
+The top half of each table corresponds to overdetermined cases whereas the bottom half corresponds to undetdetermined ones. As we can see, neither one of the methods performs better than the other always. In the case where $\lambda=0$ (i.e. ordinary least squares), we observe that AT performs better than LLM irrespective of the ratio of the observations: variables or the sparcity of the data. While the errors for both the methods are almost the same, the average number of iterations are silimar which resuls in AT converging much faster as it only computes a single projection in every iteration. The second case is more interesting. In the overdetermined case, LLM performs better than AT in terms of both run time and error with the performance being significantly better for sparse data (k:p ratio 0.1). In the underdetermined case, however, we observe that AT outperforms LLM when the k:p ratio is $0.5$. It has lesser number of iterations (making it almost 1.4 times as fast as LLM) and has lower error rates. This trend is particularly visible in the underdetrmined case for $\lambda=0$ as well. 
+
+While there are certain settings as the one described above where AT outperforms LLM, we found that in general LLM outperformed AT in most of the settings for the Lasso problem. We would like to point here that the runtime for LLM was much lesser (? do we have a stat to put here?) than that for AT and the errors were lower too. Summarizing, we observe that 
 \begin{itemize}
-\item AT outperforms LLM in underdetermined cases when the \textbf{k:p ratio is 0.5}.
-\item Despite being more computationally heavy, LLM performs almost twice as fast for all the other datasets when $\lambda$ is not zero. 
+\item AT outperforms LLM in certain cases, such as the underdetermined cases when the \textbf{k:p ratio is 0.5}.
+\item Despite being more computationally heavy, LLM performed atleast twice as fast for all the other datasets when $\lambda \neq 0$ in the Lasso problem considered here.
 \end{itemize}
 
 # References
