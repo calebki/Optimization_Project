@@ -16,11 +16,10 @@ header-includes:
    - \usepackage{advdate}
    - \usepackage[utf8]{inputenc}
    - \usepackage[table]{xcolor}
-   -\usepackage{multirow}
-   -\usepackage{array}
- 	\newcolumntype{P}[1]{>{\centering\arraybackslash}p{#1}}
+   - \usepackage{multirow}
+   - \usepackage{array}
+    \newcolumntype{P}[1]{>{\centering\arraybackslash}p{#1}}
  	\newcolumntype{M}[1]{>{\centering\arraybackslash}m{#1}}
-
 bibliography: project.bib
 output: pdf_document
 abstract: In this paper we consider first-order solvers for convex cone problems. We introduce the general framework for these kinds of problems developed by the creators of the TFOCS software. The approach works by taking a conic formulation of an optimization problem, determining its dual, applying smoothing, and finally solving via a first-order method. The paper goes into detail about two of the six solvers available in TFOCS, Auslender and Teboulle’s method as well as Lam, Lu, and Monteiro’s method. In particular, the paper discusses how these algorithms use backtracking and projections to efficiently get a solution. Finally, a numerical experiment with the Lasso problem displays the performance of these two solvers in a variety of settings.

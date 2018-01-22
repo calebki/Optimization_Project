@@ -13,9 +13,9 @@ import pandas as pd
 
 df = pd.DataFrame(columns = ['n', 'p', 'k', 'sigma', 'lambda', 
                         'method', 'time', 'error', 'numiters'])
-m = [200, 100]
+m = [500, 100]
 npratio = [2, 0.5]
-pkratio = [1.5, 2, 10]
+pkratio = [1.25]
 settings = np.empty(shape = (len(m)*len(npratio)*len(pkratio), 4), dtype = object)
 help = 0
 for n in m:
@@ -53,12 +53,12 @@ for n, p, k, sigma in settings:
                 t0 = time.time()
                 bstarAT, pstarAT, countAT = tfocs(smoothF, gradF, nonsmoothF, projectorF, 
                                                   np.zeros(p, dtype = np.longdouble), 
-                                                  tol = 1e-5, gamma = 1e-1, solver = 'AT')
+                                                  tol = 1e-4, gamma = 1e-1, solver = 'AT')
                 t1 = time.time()
                 t2 = time.time()
                 bstarLLM, pstarLLM, countLLM = tfocs(smoothF, gradF, nonsmoothF, projectorF, 
                                                      np.zeros(p, dtype = np.longdouble), 
-                                                     tol = 1e-5, gamma = 1e-1, solver = 'LLM')
+                                                     tol = 1e-4, gamma = 1e-1, solver = 'LLM')
                 t3= time.time()
                 df.loc[counter] = [n, p, k, sigma, s, 'AT', t1 - t0, 
                       LA.norm(beta - bstarAT) / LA.norm(beta), countAT]
